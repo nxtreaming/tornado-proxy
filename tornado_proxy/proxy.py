@@ -61,7 +61,7 @@ def get_proxy(url):
         while True:
             if pos <= 0:
                 if hostname in white_hosts:
-                    ues_proxy = True
+                    use_proxy = True
                 break
             suffix = hostname[pos + 1:]
             if suffix in white_hosts:
