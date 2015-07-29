@@ -42,14 +42,38 @@ logger = logging.getLogger('tornado_proxy')
 __all__ = ['ProxyHandler', 'run_proxy']
 
 
+white_hosts = set()
+white_list = os.environ.get('white_list')
+if white_list:
+    for l in file(white_list):
+        l = l.strip()
+        if l:
+            white_hosts.add(l)
+
+
 def get_proxy(url):
-    url_parsed = urlparse(url, scheme='http')
+    url_parsed = urlparse(url)
+    hostname = url_parsed.hostname
+    use_proxy = False
+    if white_hosts:
+        pos = hostname.rfind('.')
+        pos = hostname.rfind('.', 0, pos - 1)
+        while True:
+            if pos <= 0:
+                if hostname in white_hosts:
+                    ues_proxy = True
+                break
+            suffix = hostname[pos + 1:]
+            if suffix in white_hosts:
+                use_proxy = True
+                break
+            pos = hostname.rfind('.', 0, pos - 1)
     proxy_key = '%s_proxy' % url_parsed.scheme
-    return os.environ.get(proxy_key)
+    return os.environ.get(proxy_key) if use_proxy else None
 
 
 def parse_proxy(proxy):
-    proxy_parsed = urlparse(proxy, scheme='http')
+    proxy_parsed = urlparse(proxy)
     return proxy_parsed.hostname, proxy_parsed.port
 
 
@@ -69,7 +93,8 @@ def fetch_request(url, callback, **kwargs):
 
 
 class ProxyHandler(tornado.web.RequestHandler):
-    SUPPORTED_METHODS = ['GET', 'POST', 'CONNECT']
+    SUPPORTED_METHODS = [
+        'GET', 'POST', 'CONNECT', 'PUT', 'OPTIONS', 'DELETE', 'HEAD']
 
     @tornado.web.asynchronous
     def get(self):
@@ -191,7 +216,7 @@ class ProxyHandler(tornado.web.RequestHandler):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
         upstream = tornado.iostream.IOStream(s)
 
-        proxy = get_proxy(self.request.uri)
+        proxy = get_proxy('https://' + self.request.uri)
         if proxy:
             proxy_host, proxy_port = parse_proxy(proxy)
             upstream.connect((proxy_host, proxy_port), start_proxy_tunnel)
