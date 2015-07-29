@@ -112,9 +112,31 @@ class ProxyHandler(tornado.web.RequestHandler):
                 self.write('Internal server error:\n' + str(e))
                 self.finish()
 
+
     @tornado.web.asynchronous
     def post(self):
         return self.get()
+
+
+    @tornado.web.asynchronous
+    def put(self):
+        return self.get()
+
+
+    @tornado.web.asynchronous
+    def options(self):
+        return self.get()
+
+
+    @tornado.web.asynchronous
+    def head(self):
+        return self.get()
+
+
+    @tornado.web.asynchronous
+    def delete(self):
+        return self.get()
+
 
     @tornado.web.asynchronous
     def connect(self):
